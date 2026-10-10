@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HealthModule } from './health/health.module';
 import { ProductosModule } from './productos/productos.module';
+import { PedidosModule } from './pedidos/pedidos.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ProductosModule } from './productos/productos.module';
     }),
     HealthModule,
     ProductosModule,
+    PedidosModule,
     // TODO: registra aquí tu PedidosModule.
   ],
 })
