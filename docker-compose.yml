@@ -1,0 +1,43 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD:-Examen_Pass123!}
+    ports:
+      - "${DB_PORT:-1433}:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # Ejecuta en orden alfabético todos los db/*.sql cada vez que se levanta el compose.
+  # Por eso los scripts deben ser idempotentes (IF NOT EXISTS ...).
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD:-Examen_Pass123!}
+    volumes:
+      - ./db:/init:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        for f in /init/*.sql; do
+          echo "-> $$f"
+          /opt/mssql-tools18/bin/sqlcmd -C -S db -U sa -P "$$MSSQL_SA_PASSWORD" -b -i "$$f" || exit 1
+        done
+        echo "Base de datos lista."
+    restart: "no"
+
+volumes:
+  mssql-data:
