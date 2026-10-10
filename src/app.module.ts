@@ -26,7 +26,6 @@ import { PedidosModule } from './pedidos/pedidos.module';
     HealthModule,
     ProductosModule,
     PedidosModule,
-    // TODO: registra aquí tu PedidosModule.
   ],
 })
 export class AppModule {}
