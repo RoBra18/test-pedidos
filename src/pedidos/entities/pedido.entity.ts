@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { PedidoDetalle } from './pedido-detalle.entity';
 
 @Entity({ name: 'pedidos' })
 export class Pedido {
@@ -33,4 +34,9 @@ export class Pedido {
     },
   })
   total!: number;
+
+  @OneToMany(()=> PedidoDetalle, (detalle) => detalle.pedido, {
+    cascade: true
+  })
+  detalles! : PedidoDetalle[];
 }

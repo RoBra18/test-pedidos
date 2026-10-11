@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Pedido } from './pedido.entity';
 
 @Entity({ name: 'pedido_detalle' })
 export class PedidoDetalle {
@@ -30,4 +31,8 @@ export class PedidoDetalle {
         select: true,
     })
     subtotal!: number;
+    
+    @ManyToOne(() => Pedido, (pedido) => pedido.detalles)
+    @JoinColumn({name: "pedidoId"})
+    pedido!: Pedido;
 }

@@ -102,13 +102,4 @@ export class PedidosService {
         }
         return productos;
     }
-
-    //#region  since here copy and save and delete for the first branch
-    async obtener(id: number): Promise<PedidoRespuestaDto> {
-    const producto = await this.productos.findOneBy({ id });
-    if (!producto) {
-      throw new NotFoundException(`Producto ${id} no existe`);
-    }
-    return producto;
-  }
 }
