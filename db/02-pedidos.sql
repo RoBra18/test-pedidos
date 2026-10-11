@@ -4,7 +4,7 @@ IF OBJECT_ID('dbo.pedidos', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.pedidos (
         id INT IDENTITY(1,1) NOT NULL,
-        clienteId NVARCHAR(15) NOT NULL,
+        clienteId NVARCHAR(36) NOT NULL,
 
         estado TINYINT NOT NULL
             CONSTRAINT DF_pedidos_estado DEFAULT (1),

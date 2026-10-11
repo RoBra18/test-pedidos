@@ -63,9 +63,9 @@ describe('Prueba de Concurrencia - Creación de Pedidos (e2e)', () => {
     productoTestId = nuevoProducto.id;
   });
 
-  it('debe prevenir sobreventa y respetar la consistencia ACID ante 5 pedidos simultáneos', async () => {
-    // - Stock total disponible: 10 unidades.
-    // - 5 peticiones simultáneas intentando comprar 3 unidades cada una (Demanda total = 15 unidades).
+  it('debe prevenir sobreventa y respetar la consistencia ante 5 pedidos simultáneos', async () => {
+    // Stock total disponible: 10 unidades.
+    // 5 peticiones simultáneas intentando comprar 3 unidades cada una (15 unidades en total)
    
     const cantidadPorPedido = 3;
     const totalPeticiones = 5;
@@ -74,7 +74,7 @@ describe('Prueba de Concurrencia - Creación de Pedidos (e2e)', () => {
       request(app.getHttpServer())
         .post('/pedidos')
         .send({
-          clienteId: `CLI-${i + 1}`,
+          clienteId: `CLI8888888888888888888-${i + 1}`,
           items: [
             {
               productoId: productoTestId,
@@ -94,7 +94,6 @@ describe('Prueba de Concurrencia - Creación de Pedidos (e2e)', () => {
 
     expect(rechazadas).toHaveLength(2);
     expect(exitosas).toHaveLength(3);
-
     
     const productoActualizado = await dataSource
       .getRepository(Producto)

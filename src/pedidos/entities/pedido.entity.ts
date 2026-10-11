@@ -7,7 +7,7 @@ export class Pedido {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: 'nvarchar', length: 15 })
+  @Column({ type: 'nvarchar', length: 36 })
   clienteId!: string;
 
   @Column({ type: 'tinyint', default: EstadoPedido.CREADO })

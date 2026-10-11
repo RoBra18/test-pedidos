@@ -13,7 +13,7 @@ import { CrearPedidoItemDto } from './crear-pedidoitem.dto';
 
 export class CrearPedidoDto {
   @IsString()
-  @MaxLength(15)
+  @MaxLength(36)
   @IsNotEmpty( { message: 'clienteId no puede estar vacío' })
   @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
   clienteId!: string;
