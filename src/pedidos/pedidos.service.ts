@@ -3,11 +3,11 @@ import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CrearPedidoDto } from './dtos/crear-pedido.dto';
 import { PedidoRespuestaDto } from './dtos/pedido-respuesta.dto';
 import { CrearPedidoItemDto } from './dtos/crear-pedidoitem.dto';
-import { Producto } from 'src/productos/producto.entity';
 import { PedidoDetalle } from './entities/pedido-detalle.entity';
 import { Pedido } from './entities/pedido.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EstadoPedido, EstadoPedidoTexto } from './enums/estado-pedido.enum';
+import { Producto } from '../productos/producto.entity';
 
 @Injectable()
 export class PedidosService {
