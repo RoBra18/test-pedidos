@@ -6,15 +6,18 @@ import {
   MaxLength,
   Matches,
   ValidateNested,
+  IsNotEmpty,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { CrearPedidoItemDto } from './crear-pedidoitem.dto';
 
 export class CrearPedidoDto {
   @IsString()
   @MaxLength(15)
-  @Matches(/\S/, { message: 'clienteId no puede estar vacío' })
+  @IsNotEmpty( { message: 'clienteId no puede estar vacío' })
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
   clienteId!: string;
+  
 
   @IsArray()
   @ArrayMinSize(1)
