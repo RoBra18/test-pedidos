@@ -1,15 +1,19 @@
-import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CrearPedidoDto } from './dtos/crear-pedido.dto';
 import { PedidoRespuestaDto } from './dtos/pedido-respuesta.dto';
 import { CrearPedidoItemDto } from './dtos/crear-pedidoitem.dto';
 import { Producto } from 'src/productos/producto.entity';
 import { PedidoDetalle } from './entities/pedido-detalle.entity';
 import { Pedido } from './entities/pedido.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class PedidosService {
-    constructor(private readonly dataSource: DataSource) { }
+    constructor(private readonly dataSource: DataSource,
+            @InjectRepository(Pedido)
+                private readonly productos: Repository<Pedido>,
+    ) { }
 
     async crear(dto: CrearPedidoDto): Promise<PedidoRespuestaDto> {
         return this.dataSource.transaction(async (manager) => {
@@ -32,10 +36,11 @@ export class PedidosService {
 
             const productosRepository = manager.getRepository(Producto);
 
-            dto.items.forEach(async item => {
+            for (const item of dto.items) {
                 const producto = productos.get(item.productoId);
                 await productosRepository.update({ id: producto!.id }, { stock: producto!.stock - item.cantidad })
-            })
+
+            }
 
             const pedidosRepository = manager.getRepository(Pedido);
 
@@ -56,17 +61,18 @@ export class PedidosService {
                 })
             )))
 
+
             return {
                 id: pedido.id,
                 clienteId: pedido.clienteId,
                 estado: 'CREADO',
                 creadoEn: pedido.creadoEn.toISOString(),
-                total: pedido.total,
+                total: totalPedido,
                 items: detallesGuardados.map((detalle) => ({
                     productoId: detalle.productoId,
                     cantidad: detalle.cantidad,
                     precioUnitario: detalle.precioUnitario,
-                    subtotal: detalle.subtotal,
+                    subtotal: detalle.cantidad * detalle.precioUnitario,
                 })),
             };
         })
@@ -78,20 +84,31 @@ export class PedidosService {
 
         const itemsOrdenadosCopia = [...items].sort((a, b) => a.productoId - b.productoId);
 
-        itemsOrdenadosCopia.forEach(async item => {
+        for (const item of itemsOrdenadosCopia) {
+
             const producto = await productosRepository.createQueryBuilder("producto")
                 .setLock("pessimistic_write")
                 .where("producto.id = :id", { id: item.productoId })
                 .getOne();
 
             if (producto === null) {
-                return;
+                throw new NotFoundException();
             }
-            if (item.cantidad > producto?.stock) {
-                return
+            if (item.cantidad > producto.stock) {
             }
 
             productos.set(producto.id, producto);
-        })
+
+        }
+        return productos;
     }
+
+    //#region  since here copy and save and delete for the first branch
+    async obtener(id: number): Promise<PedidoRespuestaDto> {
+    const producto = await this.productos.findOneBy({ id });
+    if (!producto) {
+      throw new NotFoundException(`Producto ${id} no existe`);
+    }
+    return producto;
+  }
 }

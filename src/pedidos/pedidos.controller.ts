@@ -11,7 +11,7 @@ export class PedidosController {
     }
 
     @Post()
-    crear(@Body() crearPedidoDto : CrearPedidoDto) : PedidoRespuestaDto {
-        return this.pedidosService.crear(crearPedidoDto);
+    async crear(@Body() crearPedidoDto : CrearPedidoDto) : Promise<PedidoRespuestaDto> {
+        return await this.pedidosService.crear(crearPedidoDto);
     }
 }
