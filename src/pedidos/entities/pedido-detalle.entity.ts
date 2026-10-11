@@ -29,10 +29,14 @@ export class PedidoDetalle {
         insert: false,
         update: false,
         select: true,
+        transformer: {
+            to: (v: number) => v,
+            from: (v: string | number) => Number(v),
+        },
     })
     subtotal!: number;
-    
+
     @ManyToOne(() => Pedido, (pedido) => pedido.detalles)
-    @JoinColumn({name: "pedidoId"})
+    @JoinColumn({ name: "pedidoId" })
     pedido!: Pedido;
 }
