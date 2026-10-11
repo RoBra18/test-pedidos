@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CrearPedidoDto } from './dtos/crear-pedido.dto';
 import { PedidoRespuestaDto } from './dtos/pedido-respuesta.dto';
@@ -11,95 +11,84 @@ import { InjectRepository } from '@nestjs/typeorm';
 @Injectable()
 export class PedidosService {
     constructor(private readonly dataSource: DataSource,
-            @InjectRepository(Pedido)
-                private readonly productos: Repository<Pedido>,
+        @InjectRepository(Pedido)
+        private readonly productos: Repository<Pedido>,
     ) { }
 
     async crear(dto: CrearPedidoDto): Promise<PedidoRespuestaDto> {
         return this.dataSource.transaction(async (manager) => {
-            const productos = await this.obtenerProductosBloqueados(manager, dto.items);
+            const productosMap = await this.obtenerProductosBloqueados(manager, dto.items);
 
-            const detalles = dto.items.map((item) => {
-                const producto = productos.get(item.productoId);
-
-                return {
-                    productoId: producto!.id,
-                    cantidad: item.cantidad,
-                    precioUnitario: producto!.precio
-                }
-            })
-
-            const totalPedido = Number(detalles.reduce(
-                (totalAcumulado, detalle) =>
-                    totalAcumulado + detalle.precioUnitario * detalle.cantidad, 0)
-            )
-
-            const productosRepository = manager.getRepository(Producto);
+            let totalPedido = 0;
+            const detalles: PedidoDetalle[] = [];
 
             for (const item of dto.items) {
-                const producto = productos.get(item.productoId);
-                await productosRepository.update({ id: producto!.id }, { stock: producto!.stock - item.cantidad })
+                const producto = productosMap.get(item.productoId)!;
 
+                if (item.cantidad > producto.stock) {
+                    throw new BadRequestException(
+                        `Stock insuficiente para el producto ${producto.id}. Disponible: ${producto.stock}`,
+                    );
+                }
+
+                producto.stock = producto.stock - item.cantidad;
+
+                const precio = producto.precio;
+                totalPedido += precio * item.cantidad;
+
+                detalles.push(
+                    manager.create(PedidoDetalle, {
+                        productoId: producto.id,
+                        cantidad: item.cantidad,
+                        precioUnitario: precio,
+                    }),
+                );
             }
 
-            const pedidosRepository = manager.getRepository(Pedido);
+            await manager.save(Array.from(productosMap.values()));
 
-            const pedido = await pedidosRepository.save(pedidosRepository.create({
-                clienteId: dto.clienteId,
-                estado: 1,
-                total: totalPedido
-            }));
-
-            const detalleRepository = manager.getRepository(PedidoDetalle);
-
-            const detallesGuardados = await detalleRepository.save(detalles.map((detalle =>
-                detalleRepository.create({
-                    pedidoId: pedido.id,
-                    productoId: detalle.productoId,
-                    precioUnitario: detalle.precioUnitario,
-                    cantidad: detalle.cantidad
-                })
-            )))
-
+            const pedido = await manager.save(
+                manager.create(Pedido, {
+                    clienteId: dto.clienteId,
+                    estado: 1,
+                    total: totalPedido,
+                    detalles,
+                }),
+            );
 
             return {
                 id: pedido.id,
                 clienteId: pedido.clienteId,
                 estado: 'CREADO',
                 creadoEn: pedido.creadoEn.toISOString(),
-                total: totalPedido,
-                items: detallesGuardados.map((detalle) => ({
+                total: pedido.total,
+                items: pedido.detalles.map((detalle) => ({
                     productoId: detalle.productoId,
                     cantidad: detalle.cantidad,
                     precioUnitario: detalle.precioUnitario,
                     subtotal: detalle.cantidad * detalle.precioUnitario,
                 })),
             };
-        })
+        });
     }
 
-    private async obtenerProductosBloqueados(manager: EntityManager, items: CrearPedidoItemDto[]): Promise<Map<number, Producto>> {
-        const productosRepository = manager.getRepository(Producto);
-        const productos = new Map<number, Producto>();
+    private async obtenerProductosBloqueados(
+        manager: EntityManager,
+        items: CrearPedidoItemDto[] ): Promise<Map<number, Producto>> {
+        const idsOrdenados = [...items.map((item) => item.productoId)].sort((a, b) => a - b);
 
-        const itemsOrdenadosCopia = [...items].sort((a, b) => a.productoId - b.productoId);
+        const productos = await manager
+            .getRepository(Producto)
+            .createQueryBuilder('producto')
+            .setLock('pessimistic_write')
+            .where('producto.id IN (:...ids)', { ids: idsOrdenados })
+            .orderBy('producto.id', 'ASC')
+            .getMany();
 
-        for (const item of itemsOrdenadosCopia) {
-
-            const producto = await productosRepository.createQueryBuilder("producto")
-                .setLock("pessimistic_write")
-                .where("producto.id = :id", { id: item.productoId })
-                .getOne();
-
-            if (producto === null) {
-                throw new NotFoundException();
-            }
-            if (item.cantidad > producto.stock) {
-            }
-
-            productos.set(producto.id, producto);
-
+        if (productos.length !== idsOrdenados.length) {
+            throw new NotFoundException('Uno o más productos no existen');
         }
-        return productos;
+
+        return new Map(productos.map((producto) => [producto.id, producto]));
     }
 }
