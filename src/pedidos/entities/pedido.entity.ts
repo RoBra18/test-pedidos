@@ -1,5 +1,6 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { PedidoDetalle } from './pedido-detalle.entity';
+import { EstadoPedido } from '../enums/estado-pedido.enum';
 
 @Entity({ name: 'pedidos' })
 export class Pedido {
@@ -9,8 +10,8 @@ export class Pedido {
   @Column({ type: 'nvarchar', length: 15 })
   clienteId!: string;
 
-  @Column({ type: 'tinyint', default: 1 })
-  estado!: number;
+  @Column({ type: 'tinyint', default: EstadoPedido.CREADO })
+  estado!: EstadoPedido;
 
   @Column({ type: 'datetime2', precision: 0, default: () => 'SYSDATETIME()' })
   creadoEn!: Date;

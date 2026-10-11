@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CrearPedidoDto } from './dtos/crear-pedido.dto';
 import { PedidoRespuestaDto } from './dtos/pedido-respuesta.dto';
@@ -7,6 +7,7 @@ import { Producto } from 'src/productos/producto.entity';
 import { PedidoDetalle } from './entities/pedido-detalle.entity';
 import { Pedido } from './entities/pedido.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { EstadoPedido, EstadoPedidoTexto } from './enums/estado-pedido.enum';
 
 @Injectable()
 export class PedidosService {
@@ -26,7 +27,7 @@ export class PedidosService {
                 const producto = productosMap.get(item.productoId)!;
 
                 if (item.cantidad > producto.stock) {
-                    throw new BadRequestException(
+                    throw new ConflictException(
                         `Stock insuficiente para el producto ${producto.id}. Disponible: ${producto.stock}`,
                     );
                 }
@@ -50,7 +51,7 @@ export class PedidosService {
             const pedido = await manager.save(
                 manager.create(Pedido, {
                     clienteId: dto.clienteId,
-                    estado: 1,
+                    estado: EstadoPedido.CREADO,
                     total: totalPedido,
                     detalles,
                 }),
@@ -59,7 +60,7 @@ export class PedidosService {
             return {
                 id: pedido.id,
                 clienteId: pedido.clienteId,
-                estado: 'CREADO',
+                estado: EstadoPedidoTexto[pedido.estado],
                 creadoEn: pedido.creadoEn.toISOString(),
                 total: pedido.total,
                 items: pedido.detalles.map((detalle) => ({
