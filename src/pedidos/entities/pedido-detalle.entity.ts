@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Pedido } from './pedido.entity';
 
 @Entity({ name: 'pedido_detalle' })
 export class PedidoDetalle {
@@ -29,6 +29,14 @@ export class PedidoDetalle {
         insert: false,
         update: false,
         select: true,
+        transformer: {
+            to: (v: number) => v,
+            from: (v: string | number) => Number(v),
+        },
     })
     subtotal!: number;
+
+    @ManyToOne(() => Pedido, (pedido) => pedido.detalles)
+    @JoinColumn({ name: "pedidoId" })
+    pedido!: Pedido;
 }
