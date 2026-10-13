@@ -13,7 +13,7 @@ import { Producto } from '../productos/producto.entity';
 export class PedidosService {
     constructor(private readonly dataSource: DataSource,
         @InjectRepository(Pedido)
-        private readonly productos: Repository<Pedido>,
+        private readonly pedidosRepo: Repository<Pedido>,
     ) { }
 
     async crear(dto: CrearPedidoDto): Promise<PedidoRespuestaDto> {
@@ -75,7 +75,7 @@ export class PedidosService {
 
     private async obtenerProductosBloqueados(
         manager: EntityManager,
-        items: CrearPedidoItemDto[] ): Promise<Map<number, Producto>> {
+        items: CrearPedidoItemDto[]): Promise<Map<number, Producto>> {
         const idsOrdenados = [...items.map((item) => item.productoId)].sort((a, b) => a - b);
 
         const productos = await manager
@@ -91,5 +91,20 @@ export class PedidosService {
         }
 
         return new Map(productos.map((producto) => [producto.id, producto]));
+    }
+
+    async obtenerPorId(id: number): Promise<PedidoRespuestaDto> {
+        const pedido = await this.pedidosRepo.findOne({
+            where: { id },
+            relations: {
+                detalles: true,
+            },
+        });
+
+        if (!pedido) {
+            throw new NotFoundException(`El pedido con ID ${id} no existe`);
+        }
+
+        return PedidoRespuestaDto.desdeEntidad(pedido);
     }
 }
