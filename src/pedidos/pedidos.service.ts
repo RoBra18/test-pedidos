@@ -62,7 +62,7 @@ export class PedidosService {
                 clienteId: pedido.clienteId,
                 estado: EstadoPedidoTexto[pedido.estado],
                 creadoEn: pedido.creadoEn.toISOString(),
-                total: pedido.total,
+                total: totalPedido,
                 items: pedido.detalles.map((detalle) => ({
                     productoId: detalle.productoId,
                     cantidad: detalle.cantidad,
