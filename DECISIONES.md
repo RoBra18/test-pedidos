@@ -1,6 +1,5 @@
 # Decisiones
 
-> Completa este archivo con tus propias palabras. Media página alcanza. En la entrevista te pediremos que expliques cada punto.
 ### Se decidió mantener el código en español, debido a que el proyecto base se encontraba en ese idioma
 
 ## Diseño de las tablas
